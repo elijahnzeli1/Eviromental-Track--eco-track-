@@ -1,0 +1,21 @@
+:root {
+    --primary: #4CAF50;
+    --primary-dark: #45a049;
+    --secondary: #FFC107;
+    --background: #F1F8E9;
+    --text: #333333;
+    --error: #F44336;
+    --success: #4CAF50;
+  }
+  
+  .theme-dark {
+    --primary: #66BB6A;
+    --primary-dark: #558B2F;
+    --secondary: #FFD54F;
+    --background: #1E1E1E;
+    --text: #FFFFFF;
+    --error: #EF5350;
+    --success: #66BB6A;
+  }
+  
+  /* Add any additional theme styles here */
