@@ -6,7 +6,7 @@ import { Progress } from '@/components/ui/progress'
 import { Button } from '@/components/ui/button'
 import { MapPin, Trash2, Coins } from 'lucide-react'
 
-export default function Dashboard() {
+export default function DashboardPage() {
   const [userStats, setUserStats] = useState({
     tokensEarned: 0,
     wasteCollected: 0,
