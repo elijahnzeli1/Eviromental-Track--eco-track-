@@ -1,41 +1,38 @@
 import { NextResponse } from 'next/server'
-import prisma from '@/src/lib/prisma'
+import { supabase } from '@/src/lib/supabase'
 
 export async function GET(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const id = params.id
-  const user = await prisma.user.findUnique({
-    where: { id },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      tokensEarned: true,
-      wasteCollected: true,
-      rank: true,
-    },
-  })
+  const { data, error } = await supabase
+    .from('users')
+    .select('id, name, email, tokens_earned, waste_collected, rank')
+    .eq('id', params.id)
+    .single()
 
-  if (!user) {
+  if (error) {
     return new NextResponse('User not found', { status: 404 })
   }
 
-  return NextResponse.json(user)
+  return NextResponse.json(data)
 }
 
 export async function PUT(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const id = params.id
   const json = await request.json()
+  const { data, error } = await supabase
+    .from('users')
+    .update(json)
+    .eq('id', params.id)
+    .select()
+    .single()
 
-  const updatedUser = await prisma.user.update({
-    where: { id },
-    data: json,
-  })
+  if (error) {
+    return new NextResponse('Update failed', { status: 500 })
+  }
 
-  return NextResponse.json(updatedUser)
+  return NextResponse.json(data)
 }

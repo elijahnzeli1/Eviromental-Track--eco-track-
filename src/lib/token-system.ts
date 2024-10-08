@@ -1,68 +1,39 @@
-import { PrismaClient } from '@prisma/client'
-const prisma = new PrismaClient()
+import { supabase } from '@/src/lib/supabase'
 
 export async function awardTokens(userId: string, amount: number) {
-  const user = await prisma.user.update({
-    where: { id: userId },
-    data: {
-      tokensEarned: { increment: amount },
-    },
-  })
-  return user.tokensEarned
+  const { data, error } = await supabase
+    .from('users')
+    .update({ tokens_earned: supabase.raw(`tokens_earned + ${amount}`) })
+    .eq('id', userId)
+    .select('tokens_earned')
+    .single()
+
+  if (error) throw error
+  return data.tokens_earned
 }
 
 export async function spendTokens(userId: string, amount: number) {
-  const user = await prisma.user.findUnique({ where: { id: userId } })
-  if (!user || user.tokensEarned < amount) {
-    throw new Error('Insufficient tokens')
-  }
-  
-  const updatedUser = await prisma.user.update({
-    where: { id: userId },
-    data: {
-      tokensEarned: { decrement: amount },
-    },
-  })
-  return updatedUser.tokensEarned
+  const { data, error } = await supabase
+    .from('users')
+    .update({ tokens_earned: supabase.raw(`tokens_earned - ${amount}`) })
+    .eq('id', userId)
+    .gte('tokens_earned', amount)
+    .select('tokens_earned')
+    .single()
+
+  if (error) throw error
+  return data.tokens_earned
 }
 
 export async function getTokenBalance(userId: string) {
-  const user = await prisma.user.findUnique({ where: { id: userId } })
-  return user?.tokensEarned || 0
+  const { data, error } = await supabase
+    .from('users')
+    .select('tokens_earned')
+    .eq('id', userId)
+    .single()
+
+  if (error) throw error
+  return data.tokens_earned
 }
 
-export async function redeemTokens(userId: string, amount: number, rewardId: string) {
-  const user = await prisma.user.findUnique({ where: { id: userId } })
-  if (!user || user.tokensEarned < amount) {
-    throw new Error('Insufficient tokens')
-  }
-  
-  const reward = await prisma.Reward.findUnique({ where: { id: rewardId } })
-  if (!reward || reward.tokenCost > amount) {
-    throw new Error('Invalid reward or insufficient tokens')
-  }
-
-  const updatedUser = await prisma.user.update({
-    where: { id: userId },
-    data: {
-      tokensEarned: { decrement: amount },
-    },
-  })
-
-  await prisma.redemption.create({
-    data: {
-      userId: userId,
-      rewardId: rewardId,
-      tokensCost: amount,
-    },
-  })
-
-  return { updatedTokenBalance: updatedUser.tokensEarned, redeemedReward: reward }
-}
-
-export async function getAvailableRewards() {
-  return prisma.reward.findMany({
-    where: { isActive: true },
-    include: { partner: true },
-  })
-}
+// Update other functions similarly

@@ -14,13 +14,14 @@ model User {
   emailVerified DateTime?
   image         String?
   password      String
+  
 
   tokensEarned    Int               @default(0)
   wasteCollected  Float             @default(0)
   rank            Int?
   accounts        Account[]
   sessions        Session[]
-  redemptions     Redemption[]
+  redemption     Redemption[]
   purchases       Purchase[]
   posts           Post[]
   participatedCleanups SponsoredCleanup[]
@@ -120,7 +121,7 @@ model Partner {
   name      String
   description String
   website   String?
-  rewards   Reward[]
+  reward   Reward[]
 }
 
 model Reward {
@@ -131,7 +132,7 @@ model Reward {
   isActive    Boolean  @default(true)
   partnerId   String
   partner     Partner  @relation(fields: [partnerId], references: [id])
-  redemptions Redemption[]
+  redemption Redemption[]
 }
 
 model Redemption {

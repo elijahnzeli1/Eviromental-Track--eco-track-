@@ -1,42 +1,20 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
+import { useAuth } from '@/src/hooks/useAuth';
 import TokenSellForm from '@/components/TokenSellForm';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useRouter } from 'next/navigation';
 
 export default function MapPage() {
-  const { data: session, status } = useSession();
-  const [availableTokens, setAvailableTokens] = useState(0);
-  const router = useRouter();
+  const { user, isLoading } = useAuth();
 
-  useEffect(() => {
-    if (session) {
-      fetchAvailableTokens();
-    }
-  }, [session]);
-
-  const fetchAvailableTokens = async () => {
-    try {
-      const response = await fetch('/api/user-tokens');
-      if (response.ok) {
-        const data = await response.json();
-        setAvailableTokens(data.availableTokens);
-      } else {
-        console.error('Failed to fetch available tokens');
-      }
-    } catch (error) {
-      console.error('Error fetching available tokens:', error);
-    }
-  };
-
-  if (status === 'loading') {
+  if (isLoading) {
     return <div>Loading...</div>;
   }
 
-  if (!session) {
+  if (!user) {
     return (
       <div className="container mx-auto px-4 py-8">
         <Card>
@@ -45,7 +23,7 @@ export default function MapPage() {
           </CardHeader>
           <CardContent>
             <p className="mb-4">Please log in to view and sell your tokens.</p>
-            <Button className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded" onClick={() => router.push('/api/auth/signin')}>Log In</Button>
+            <Button className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded" onClick={() => router.push('/login')}>Log In</Button>
           </CardContent>
         </Card>
       </div>
