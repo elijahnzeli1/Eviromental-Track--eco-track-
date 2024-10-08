@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -10,7 +10,20 @@ export default function WasteCollectionForm() {
   const [wasteType, setWasteType] = useState('')
   const [quantity, setQuantity] = useState('')
   const [location, setLocation] = useState('')
+  const [activeCollectionId, setActiveCollectionId] = useState<string | null>(null)
   const { toast } = useToast()
+
+  useEffect(() => {
+    const fetchActiveCollection = async () => {
+      const response = await fetch('/api/active-collection')
+      if (response.ok) {
+        const data = await response.json()
+        setActiveCollectionId(data.collectionId)
+      }
+    }
+
+    fetchActiveCollection()
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -18,7 +31,12 @@ export default function WasteCollectionForm() {
       const response = await fetch('/api/waste-collection', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ wasteType, quantity: Number(quantity), location }),
+        body: JSON.stringify({ 
+          wasteType, 
+          quantity: Number(quantity), 
+          location, 
+          collectionId: activeCollectionId 
+        }),
       })
       if (response.ok) {
         toast({

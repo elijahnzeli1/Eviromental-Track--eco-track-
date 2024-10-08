@@ -5,7 +5,7 @@ import { useSession } from 'next-auth/react';
 const ProfileDisplay = () => {
   const { data: session } = useSession();
 
-  if (!session) {
+  if (!session || !session.user) {
     return null;
   }
 

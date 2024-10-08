@@ -5,6 +5,7 @@ import { Toaster } from '@/components/ui/toaster'
 import { Providers } from './Providers'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
+import AISidebar from '@/components/AISidebar'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -22,12 +23,15 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${inter.className} bg-green-50 min-h-screen flex flex-col`}>
         <Providers>
-          <Navbar />
+          {/* <Navbar /> */}
           <main className="flex-grow">
             {children}
           </main>
-          <Footer />
+          
           <Toaster />
+          <AISidebar />
+
+          <Footer />
         </Providers>
       </body>
     </html>

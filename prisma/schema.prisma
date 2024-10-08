@@ -16,6 +16,7 @@ model User {
   password      String
 
   tokensEarned    Int               @default(0)
+  tokens Int                        @default(0)
   wasteCollected  Float             @default(0)
   rank            Int?
   accounts        Account[]
@@ -23,6 +24,7 @@ model User {
   purchases       Purchase[]
   posts           Post[]
   WasteCollection WasteCollection[]
+  tokens Int @default(0)
 }
 
 model Account {
@@ -91,10 +93,24 @@ model Post {
 model WasteCollection {
   id        String   @id @default(cuid())
   userId    String
+  startTime DateTime
+  endTime   DateTime?
+  status    String   @default("IN_PROGRESS")
   wasteType String
   quantity  Float
   location  String
+  status    String?
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id])
+  wasteItems WasteItem[]
+}
+
+model WasteItem {
+  id        String   @id @default(cuid())
+  wasteCollectionId String
+  wasteType String
+  quantity  Float
+  location  String
+  wasteCollection WasteCollection @relation(fields: [wasteCollectionId], references: [id])
 }

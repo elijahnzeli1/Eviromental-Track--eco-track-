@@ -15,7 +15,21 @@ export default function DashboardPage() {
 
   useEffect(() => {
     // Fetch user stats from API
-    // This is a placeholder, replace with actual API call
+    const fetchUserStats = async () => {
+      try {
+        const response = await fetch('/api/user-stats');
+        if (!response.ok) {
+          throw new Error('Failed to fetch user stats');
+        }
+        const data = await response.json();
+        setUserStats(data);
+      } catch (error) {
+        console.error('Error fetching user stats:', error);
+        // Handle error (e.g., show error message to user)
+      }
+    };
+
+    fetchUserStats();
     setUserStats({
       tokensEarned: 150,
       wasteCollected: 75,
@@ -71,7 +85,7 @@ export default function DashboardPage() {
         </CardContent>
       </Card>
       <div className="mt-6 flex justify-center">
-        <Button>Start New Collection</Button>
+        <Button className="bg-green-600 text-white hover:bg-green-700">Start New Collection</Button>
       </div>
     </div>
   )

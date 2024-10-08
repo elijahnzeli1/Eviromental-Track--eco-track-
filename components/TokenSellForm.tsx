@@ -1,56 +1,129 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { toast } from '@/components/ui/use-toast';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 
 export default function TokenSellForm() {
-  const [amount, setAmount] = useState('');
+	const [amount, setAmount] = useState('');
+	const [availableTokens, setAvailableTokens] = useState(0);
+	const { data: session } = useSession();
+	const router = useRouter();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      // Validate input
-      if (!amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) {
-        throw new Error('Please enter a valid amount');
-      }
+	useEffect(() => {
+		if (session) {
+			fetchAvailableTokens();
+		}
+	}, [session]);
 
-      // Call API to sell tokens
-      const response = await fetch('/api/sell-tokens', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ amount: parseFloat(amount) }),
-      });
+	const fetchAvailableTokens = async () => {
+		try {
+			const response = await fetch('/api/get-available-tokens');
+			if (!response.ok) {
+				throw new Error('Failed to fetch available tokens');
+			}
+			const data = await response.json();
+			setAvailableTokens(data.availableTokens);
+		} catch (error) {
+			console.error('Error fetching available tokens:', error);
+			toast({
+				title: "Error",
+				description: "Failed to fetch available tokens. Please try again.",
+				variant: "destructive",
+			});
+		}
+	};
 
-      if (!response.ok) {
-        throw new Error('Failed to sell tokens');
-      }
+	const handleSubmit = async (e: React.FormEvent) => {
+		e.preventDefault();
+		if (!session) {
+			toast({
+				title: "Authentication Required",
+				description: "Please log in to sell tokens.",
+				variant: "destructive",
+			});
+			router.push('/login');
+			return;
+		}
 
-      const result = await response.json();
-      console.log('Tokens sold successfully:', result);
+		try {
+			const sellAmount = parseFloat(amount);
+			if (isNaN(sellAmount) || sellAmount <= 0 || sellAmount > availableTokens) {
+				throw new Error('Please enter a valid amount');
+			}
 
-      // Reset form
-      setAmount('');
+			const response = await fetch('/api/sell-tokens', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({ amount: sellAmount }),
+			});
 
-      // TODO: Show success message to user
-    } catch (error) {
-      console.error('Error selling tokens:', error);
-      // TODO: Show error message to user
-    }
-  };
+			if (!response.ok) {
+				throw new Error('Failed to sell tokens');
+			}
 
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <Input
-        type="number"
-        value={amount}
-        onChange={(e) => setAmount(e.target.value)}
-        placeholder="Enter amount of tokens to sell"
-        className="w-full"
-      />
-      <Button type="submit" className="bg-green-600 hover:bg-green-700 text-white font-semibold">Sell Tokens</Button>
-    </form>
-  );
+			const result = await response.json();
+			console.log('Tokens sold successfully:', result);
+
+			setAmount('');
+			fetchAvailableTokens(); // Refresh available tokens
+			toast({
+				title: "Success",
+				description: `Successfully sold ${sellAmount} tokens.`,
+			});
+		} catch (error) {
+			console.error('Error selling tokens:', error);
+			toast({
+				title: "Error",
+				description: error instanceof Error ? error.message : 'An error occurred while selling tokens.',
+				variant: "destructive",
+			});
+		}
+	};
+
+	return (
+		<div className="p-4 bg-white rounded-lg shadow-md">
+			<h2 className="text-xl font-semibold mb-4">Sell Your Tokens</h2>
+			{session ? (
+				<>
+					{availableTokens > 0 ? (
+						<form onSubmit={handleSubmit} className="space-y-4">
+							<div className="flex flex-col sm:flex-row sm:space-x-4 space-y-4 sm:space-y-0">
+								<Input
+									type="number"
+									value={amount}
+									onChange={(e) => setAmount(e.target.value)}
+									placeholder={`Enter amount (max ${availableTokens})`}
+									className="flex-grow"
+									max={availableTokens}
+								/>
+								<Button 
+									type="submit" 
+									className="bg-green-600 hover:bg-green-700 text-white font-semibold w-full sm:w-auto"
+									disabled={!amount || parseFloat(amount) <= 0 || parseFloat(amount) > availableTokens}
+								>
+									Sell Tokens
+								</Button>
+							</div>
+						</form>
+					) : (
+						<p className="text-gray-600">You don't have any tokens available to sell.</p>
+					)}
+					<p className="mt-2 text-sm text-gray-600">Available tokens: {availableTokens}</p>
+				</>
+			) : (
+				<div>
+					<p className="text-gray-600 mb-2">Please log in to sell tokens.</p>
+					<Button onClick={() => router.push('/login')} className="bg-blue-600 hover:bg-blue-700 text-white font-semibold">
+						Log In
+					</Button>
+				</div>
+			)}
+		</div>
+	);
 }
