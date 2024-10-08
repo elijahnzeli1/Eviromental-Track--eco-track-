@@ -5,6 +5,18 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import { Button } from '@/components/ui/button'
 import { MapPin, Trash2, Coins } from 'lucide-react'
+import SponsoredCleanupComponent from '@/src/components/SponsoredCleanup'
+
+// Define the SponsoredCleanup type
+type SponsoredCleanup = {
+  id: string
+  sponsor: {
+    name: string
+  }
+  date: string
+  location: string
+  reward: number
+}
 
 export default function DashboardPage() {
   const [userStats, setUserStats] = useState({
@@ -35,6 +47,26 @@ export default function DashboardPage() {
       wasteCollected: 75,
       rank: 42,
     })
+  }, [])
+
+  const [sponsoredCleanups, setSponsoredCleanups] = useState<SponsoredCleanup[]>([])
+
+  useEffect(() => {
+    const fetchSponsoredCleanups = async () => {
+      try {
+        const response = await fetch('/api/sponsored-cleanups')
+        if (response.ok) {
+          const data = await response.json()
+          setSponsoredCleanups(data)
+        } else {
+          console.error('Failed to fetch sponsored cleanups')
+        }
+      } catch (error) {
+        console.error('Error fetching sponsored cleanups:', error)
+      }
+    }
+
+    fetchSponsoredCleanups()
   }, [])
 
   return (
@@ -86,6 +118,21 @@ export default function DashboardPage() {
       </Card>
       <div className="mt-6 flex justify-center">
         <Button className="bg-green-600 text-white hover:bg-green-700">Start New Collection</Button>
+      </div>
+      <div className="mt-8">
+        <h2 className="text-2xl font-bold mb-4">Sponsored Cleanups</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {sponsoredCleanups.map((cleanup: SponsoredCleanup) => (
+            <SponsoredCleanupComponent
+              key={cleanup.id}
+              sponsor={cleanup.sponsor.name}
+              date={cleanup.date}
+              location={cleanup.location}
+              reward={cleanup.reward}
+              onJoin={() => console.log(`Joined ${cleanup.sponsor.name} cleanup`)}
+            />
+          ))}
+        </div>
       </div>
     </div>
   )

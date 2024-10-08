@@ -10,6 +10,11 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion"
 import { Input } from "@/components/ui/input"
+import dynamic from 'next/dynamic'
+
+const EnvironmentAnimation = dynamic(() => import('@/src/components/EnvironmentAnimation'), {
+  ssr: false,
+})
 
 export default function Component() {
   return (
@@ -17,7 +22,7 @@ export default function Component() {
       <header className="container mx-auto px-4 py-8">
         <nav className="flex justify-between items-center">
           <div className="flex items-center">
-            <img src="/placeholder.svg?height=32&width=32" alt="Eco-Track Logo" className="w-8 h-8 mr-2" />
+          <img src="/favicon.ico" alt="Eco-Track Logo" className="w-8 h-8 mr-2" />
             <h1 className="text-3xl font-bold text-green-600">Eco-Track</h1>
           </div>
           <div>
@@ -42,6 +47,10 @@ export default function Component() {
           <Link href="/signup">
             <Button size="lg" className="text-xl bg-green-600 text-white hover:bg-green-700">Get Started</Button>
           </Link>
+        </div>
+
+        <div className="mb-16">
+          <EnvironmentAnimation />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-16">

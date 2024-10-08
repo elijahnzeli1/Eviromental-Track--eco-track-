@@ -45,7 +45,7 @@ export default function MapPage() {
           </CardHeader>
           <CardContent>
             <p className="mb-4">Please log in to view and sell your tokens.</p>
-            <Button onClick={() => router.push('/api/auth/signin')}>Log In</Button>
+            <Button className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded" onClick={() => router.push('/api/auth/signin')}>Log In</Button>
           </CardContent>
         </Card>
       </div>

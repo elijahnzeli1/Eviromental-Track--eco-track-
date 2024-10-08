@@ -16,13 +16,14 @@ model User {
   password      String
 
   tokensEarned    Int               @default(0)
-  tokens Int                        @default(0)
   wasteCollected  Float             @default(0)
   rank            Int?
   accounts        Account[]
   sessions        Session[]
+  redemptions     Redemption[]
   purchases       Purchase[]
   posts           Post[]
+  participatedCleanups SponsoredCleanup[]
   WasteCollection WasteCollection[]
   tokens Int @default(0)
 }
@@ -95,7 +96,6 @@ model WasteCollection {
   userId    String
   startTime DateTime
   endTime   DateTime?
-  status    String   @default("IN_PROGRESS")
   wasteType String
   quantity  Float
   location  String
@@ -113,4 +113,51 @@ model WasteItem {
   quantity  Float
   location  String
   wasteCollection WasteCollection @relation(fields: [wasteCollectionId], references: [id])
+}
+
+model Partner {
+  id        String   @id @default(cuid())
+  name      String
+  description String
+  website   String?
+  rewards   Reward[]
+}
+
+model Reward {
+  id          String   @id @default(cuid())
+  name        String
+  description String
+  tokenCost   Int
+  isActive    Boolean  @default(true)
+  partnerId   String
+  partner     Partner  @relation(fields: [partnerId], references: [id])
+  redemptions Redemption[]
+}
+
+model Redemption {
+  id         String   @id @default(cuid())
+  userId     String
+  rewardId   String
+  tokensCost Int
+  redeemedAt DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id])
+  reward     Reward   @relation(fields: [rewardId], references: [id])
+}
+
+model Sponsor {
+  id        String   @id @default(cuid())
+  name      String
+  logo      String?
+  website   String?
+  cleanups  SponsoredCleanup[]
+}
+
+model SponsoredCleanup {
+  id        String   @id @default(cuid())
+  sponsorId String
+  sponsor   Sponsor  @relation(fields: [sponsorId], references: [id])
+  date      DateTime
+  location  String
+  reward    Int
+  participants User[]
 }
