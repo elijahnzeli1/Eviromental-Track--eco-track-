@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { supabase } from '@/src/lib/supabase';
+import { createClient } from '@/src/lib/supabase';
 import { useAuth } from '@/app/Providers';
 
 interface TokenSellFormProps {
@@ -13,6 +13,8 @@ const TokenSellForm: React.FC<TokenSellFormProps> = ({ availableTokens, onSell }
   const [amount, setAmount] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { session } = useAuth();
+  
+  const supabase = createClient();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

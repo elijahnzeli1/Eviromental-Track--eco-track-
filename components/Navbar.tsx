@@ -25,10 +25,10 @@ export default function Navbar() {
           ) : session ? (
             <ProfileDisplay />
           ) : (
-            <div className="space-x-4">
+            <>
               <Link href="/login">Login</Link>
               <Link href="/signup">Sign Up</Link>
-            </div>
+            </>
           )}
         </div>
       </div>

@@ -79,7 +79,7 @@ export default function Component() {
         <div className="relative h-96 rounded-lg overflow-hidden mb-16">
           <div className="absolute inset-0 bg-green-600 opacity-20"></div>
           <img
-            src="/placeholder.svg?height=400&width=800"
+            src="/assets/placeholder.svg?height=400&width=800"
             alt="Environmental Impact"
             className="w-full h-full object-cover"
           />
