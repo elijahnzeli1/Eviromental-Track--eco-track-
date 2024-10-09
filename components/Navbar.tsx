@@ -2,11 +2,11 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { useSession } from 'next-auth/react';
+import { useAuth } from '@/app/Providers';
 import ProfileDisplay from './ProfileDisplay';
 
 export default function Navbar() {
-  const { data: session } = useSession();
+  const { session, loading } = useAuth();
 
   return (
     <nav className="bg-green-600 text-white p-4 sticky top-0 z-10">
@@ -20,7 +20,9 @@ export default function Navbar() {
           <Link href="/projects">Projects</Link>
         </div>
         <div>
-          {session ? (
+          {loading ? (
+            <span>Loading...</span>
+          ) : session ? (
             <ProfileDisplay />
           ) : (
             <div className="space-x-4">

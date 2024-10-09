@@ -1,67 +1,67 @@
-'use client';
-
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '@/src/hooks/useAuth';
-import TokenSellForm from '@/components/TokenSellForm';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useRouter } from 'next/navigation';
+import { Input } from '@/components/ui/input';
+import { supabase } from '@/src/lib/supabase';
+import { useAuth } from '@/app/Providers';
 
-export default function MapPage() {
-  const { user, isLoading } = useAuth();
+interface TokenSellFormProps {
+  availableTokens: number;
+  onSell: () => Promise<void>;
+}
 
-  if (isLoading) {
-    return <div>Loading...</div>;
-  }
+const TokenSellForm: React.FC<TokenSellFormProps> = ({ availableTokens, onSell }) => {
+  const [amount, setAmount] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const { session } = useAuth();
 
-  if (!user) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <Card>
-          <CardHeader>
-            <CardTitle>Login Required</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="mb-4">Please log in to view and sell your tokens.</p>
-            <Button className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded" onClick={() => router.push('/login')}>Log In</Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!amount || parseInt(amount) <= 0 || parseInt(amount) > availableTokens) {
+      alert('Please enter a valid amount of tokens to sell.');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.from('users').update({
+        tokens_earned: availableTokens - parseInt(amount)
+      }).eq('id', session?.user.id);
+
+      if (error) throw error;
+
+      alert(`Successfully sold ${amount} tokens!`);
+      setAmount('');
+      await onSell();
+    } catch (error) {
+      console.error('Error selling tokens:', error);
+      alert('Failed to sell tokens. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-8">Map and Token Management</h1>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <Card>
-          <CardHeader>
-            <CardTitle>Map</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {/* Add your map component here */}
-            <p>Map component placeholder</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Sell Tokens</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {availableTokens > 0 ? (
-              <>
-                <p className="mb-4">Available tokens: {availableTokens}</p>
-                <TokenSellForm
-                  availableTokens={availableTokens}
-                  onSell={fetchAvailableTokens}
-                />
-              </>
-            ) : (
-              <p>You don't have any tokens available to sell.</p>
-            )}
-          </CardContent>
-        </Card>
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div>
+        <label htmlFor="amount" className="block text-sm font-medium text-gray-700">
+          Amount of tokens to sell
+        </label>
+        <Input
+          type="number"
+          id="amount"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+          min="1"
+          max={availableTokens}
+          required
+          className="mt-1"
+        />
       </div>
-    </div>
+      <Button type="submit" disabled={isLoading} className="w-full">
+        {isLoading ? 'Processing...' : 'Sell Tokens'}
+      </Button>
+    </form>
   );
-}
+};
+
+export default TokenSellForm;

@@ -4,13 +4,14 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/components/ui/use-toast';
-import { useSession } from 'next-auth/react';
+import { useAuth } from '@/app/Providers';
 import { useRouter } from 'next/navigation';
+import { supabase } from '@/src/lib/supabase';
 
 export default function TokenSellForm() {
 	const [amount, setAmount] = useState('');
 	const [availableTokens, setAvailableTokens] = useState(0);
-	const { data: session } = useSession();
+	const { session } = useAuth();
 	const router = useRouter();
 
 	useEffect(() => {
@@ -21,12 +22,14 @@ export default function TokenSellForm() {
 
 	const fetchAvailableTokens = async () => {
 		try {
-			const response = await fetch('/api/get-available-tokens');
-			if (!response.ok) {
-				throw new Error('Failed to fetch available tokens');
-			}
-			const data = await response.json();
-			setAvailableTokens(data.availableTokens);
+			const { data, error } = await supabase
+				.from('users')
+				.select('tokens_earned')
+				.eq('id', session?.user.id)
+				.single();
+
+			if (error) throw error;
+			setAvailableTokens(data.tokens_earned);
 		} catch (error) {
 			console.error('Error fetching available tokens:', error);
 			toast({
@@ -50,31 +53,23 @@ export default function TokenSellForm() {
 		}
 
 		try {
-			const sellAmount = parseFloat(amount);
-			if (isNaN(sellAmount) || sellAmount <= 0 || sellAmount > availableTokens) {
-				throw new Error('Please enter a valid amount');
+			const amountToSell = parseFloat(amount);
+			if (isNaN(amountToSell) || amountToSell <= 0 || amountToSell > availableTokens) {
+				throw new Error('Invalid amount');
 			}
 
-			const response = await fetch('/api/sell-tokens', {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-				},
-				body: JSON.stringify({ amount: sellAmount }),
+			const { data, error } = await supabase.rpc('sell_tokens', {
+				amount: amountToSell,
+				user_id: session.user.id
 			});
 
-			if (!response.ok) {
-				throw new Error('Failed to sell tokens');
-			}
-
-			const result = await response.json();
-			console.log('Tokens sold successfully:', result);
+			if (error) throw error;
 
 			setAmount('');
-			fetchAvailableTokens(); // Refresh available tokens
+			fetchAvailableTokens();
 			toast({
 				title: "Success",
-				description: `Successfully sold ${sellAmount} tokens.`,
+				description: `Successfully sold ${amountToSell} tokens.`,
 			});
 		} catch (error) {
 			console.error('Error selling tokens:', error);
