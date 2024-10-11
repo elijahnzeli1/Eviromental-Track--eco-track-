@@ -1,14 +1,8 @@
 import React from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
+import Link from 'next/link'
 
-interface Resource {
-  id: string
-  title: string
-  description: string
-  link: string
-}
-
-const resources: Resource[] = [
+const resources = [
   {
     id: '1',
     title: 'Waste Reduction Guide',
@@ -39,7 +33,9 @@ export function EducationalResources() {
           </CardHeader>
           <CardContent>
             <CardDescription>{resource.description}</CardDescription>
-            <a href={resource.link} className="text-blue-500 hover:underline">Learn more</a>
+            <Link href={resource.link} className="text-blue-500 hover:underline">
+              Learn more
+            </Link>
           </CardContent>
         </Card>
       ))}

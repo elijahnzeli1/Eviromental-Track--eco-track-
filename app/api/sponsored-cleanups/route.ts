@@ -1,9 +1,12 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/src/lib/prisma'
+import { PrismaClient } from '@prisma/client'
+
+const typedPrisma = prisma as PrismaClient
 
 export async function GET() {
   try {
-    const sponsoredCleanups = await prisma.sponsoredCleanup.findMany({
+    const sponsoredCleanups = await typedPrisma.sponsoredCleanup.findMany({
       include: {
         sponsor: true,
       },

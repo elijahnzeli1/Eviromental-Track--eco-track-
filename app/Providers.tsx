@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { createClient } from '@/src/lib/supabase'
 import { Session, SupabaseClient } from '@supabase/supabase-js'
+import { ThemeProvider } from './ThemeProvider'
 
 const AuthContext = createContext<{ 
   session: Session | null; 
@@ -38,9 +39,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider value={{ session, loading, supabase }}>
-      {children}
+      <ThemeProvider>
+        {children}
+      </ThemeProvider>
     </AuthContext.Provider>
   )
 }
-
 export const useAuth = () => useContext(AuthContext)

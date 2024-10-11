@@ -1,24 +1,25 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/components/ui/use-toast';
 import { useAuth } from '@/app/Providers';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/src/lib/supabase';
+import { createClient } from '@/src/lib/supabase';
 
 export default function TokenSellForm() {
 	const [amount, setAmount] = useState('');
 	const [availableTokens, setAvailableTokens] = useState(0);
 	const { session } = useAuth();
 	const router = useRouter();
+	const supabase = useMemo(() => createClient(), []);
 
 	useEffect(() => {
 		if (session) {
 			fetchAvailableTokens();
 		}
-	}, [session]);
+	}, [session, supabase]);
 
 	const fetchAvailableTokens = async () => {
 		try {

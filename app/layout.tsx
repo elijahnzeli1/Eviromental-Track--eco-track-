@@ -4,8 +4,9 @@ import { Inter } from 'next/font/google'
 import { Toaster } from '@/components/ui/toaster'
 import { Providers } from './Providers'
 import Navbar from '@/components/Navbar'
-import Footer from '@/components/Footer'
 import AISidebar from '@/components/AISidebar'
+import ConditionalFooter from '@/src/components/ConditionalFooter'
+import { AppRouterCacheProvider } from '@mui/material-nextjs/v14-appRouter';
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -31,8 +32,11 @@ export default function RootLayout({
           <Toaster />
           <AISidebar />
 
-          <Footer />
+          <ConditionalFooter />
         </Providers>
+        {/* <AppRouterCacheProvider>
+          {children}
+        </AppRouterCacheProvider> */}
       </body>
     </html>
   )

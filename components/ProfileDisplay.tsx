@@ -1,23 +1,23 @@
 import React from 'react';
 import Image from 'next/image';
-import { useSession } from 'next-auth/react';
+import { useAuth } from '@/app/Providers';
 
 const ProfileDisplay = () => {
-  const { data: session } = useSession();
+  const { session } = useAuth();
 
   if (!session || !session.user) {
     return null;
   }
 
   const { user } = session;
-  const initials = user.name ? user.name.split(' ').map(n => n[0]).join('').toUpperCase() : '';
+  const initials = user.email ? user.email[0].toUpperCase() : '';
 
   return (
     <div className="flex items-center">
-      {user.image ? (
+      {user.user_metadata?.avatar_url ? (
         <Image
-          src={user.image}
-          alt={user.name || 'User'}
+          src={user.user_metadata.avatar_url}
+          alt={user.email || 'User'}
           width={32}
           height={32}
           className="rounded-full"
@@ -27,7 +27,7 @@ const ProfileDisplay = () => {
           {initials}
         </div>
       )}
-      <span className="ml-2">{user.name}</span>
+      <span className="ml-2">{user.email}</span>
     </div>
   );
 };

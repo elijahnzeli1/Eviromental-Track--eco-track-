@@ -1,69 +1,27 @@
-import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import TokenSellForm from '@/components/TokenSellForm';
 import { createClient } from '@/src/lib/supabase';
-import { useAuth } from '@/app/Providers';
 
-interface TokenSellFormProps {
-  availableTokens: number;
-  onSell: () => Promise<void>;
-}
-
-const TokenSellForm: React.FC<TokenSellFormProps> = ({ availableTokens, onSell }) => {
-  const [amount, setAmount] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const { session } = useAuth();
-  
+export default async function MapPage() {
   const supabase = createClient();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!amount || parseInt(amount) <= 0 || parseInt(amount) > availableTokens) {
-      alert('Please enter a valid amount of tokens to sell.');
-      return;
-    }
+  // Fetch available tokens from the database
+  const { data: userData, error } = await supabase
+    .from('users')
+    .select('tokens_earned')
+    .single();
 
-    setIsLoading(true);
-    try {
-      const { error } = await supabase.from('users').update({
-        tokens_earned: availableTokens - parseInt(amount)
-      }).eq('id', session?.user.id);
+  if (error) {
+    console.error('Error fetching user data:', error);
+    return <div>Error loading user data</div>;
+  }
 
-      if (error) throw error;
-
-      alert(`Successfully sold ${amount} tokens!`);
-      setAmount('');
-      await onSell();
-    } catch (error) {
-      console.error('Error selling tokens:', error);
-      alert('Failed to sell tokens. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const availableTokens = userData?.tokens_earned || 0;
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <label htmlFor="amount" className="block text-sm font-medium text-gray-700">
-          Amount of tokens to sell
-        </label>
-        <Input
-          type="number"
-          id="amount"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-          min="1"
-          max={availableTokens}
-          required
-          className="mt-1"
-        />
-      </div>
-      <Button type="submit" disabled={isLoading} className="w-full">
-        {isLoading ? 'Processing...' : 'Sell Tokens'}
-      </Button>
-    </form>
+    <div>
+      <h1>Sell Tokens</h1>
+      <p>Available Tokens: {availableTokens}</p>
+      <TokenSellForm />
+    </div>
   );
-};
-
-export default TokenSellForm;
+}

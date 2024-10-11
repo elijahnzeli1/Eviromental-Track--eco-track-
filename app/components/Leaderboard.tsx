@@ -1,5 +1,14 @@
-import React from 'react'
+"use client";
+
+import React, { useEffect, useState } from 'react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import { createClient } from '@supabase/supabase-js'
+
+// Initialize the Supabase client
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
 
 interface User {
   id: string
@@ -7,15 +16,37 @@ interface User {
   score: number
 }
 
-const users: User[] = [
-  { id: '1', name: 'Alice', score: 1500 },
-  { id: '2', name: 'Bob', score: 1200 },
-  { id: '3', name: 'Charlie', score: 1000 },
-  { id: '4', name: 'David', score: 800 },
-  { id: '5', name: 'Eve', score: 600 },
-]
-
 export function Leaderboard() {
+  const [users, setUsers] = useState<User[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    async function fetchLeaderboard() {
+      try {
+        const { data, error } = await supabase
+          .from('leaderboard')
+          .select('id, name, score')
+          .order('score', { ascending: false })
+          .limit(5)
+
+        if (error) throw error
+
+        setUsers(data)
+      } catch (e) {
+        setError('Failed to fetch leaderboard data')
+        console.error(e)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchLeaderboard()
+  }, [])
+
+  if (loading) return <div>Loading...</div>
+  if (error) return <div>Error: {error}</div>
+
   return (
     <Card>
       <CardHeader>
