@@ -90,7 +90,6 @@ For any questions or feedback, please open an issue on this repository or contac
 
 Thank you for your interest in Eco Track! Together, we can make a positive impact on our environment.
 
-git remote add origin https://github.com/elijahnzeli1/Eviromental-Track--eco-track-.git
+git remote add origin <https://github.com/elijahnzeli1/Eviromental-Track--eco-track-.git>
 git branch -M main
 git push -u origin main
-
