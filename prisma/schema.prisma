@@ -9,19 +9,19 @@ datasource db {
 
 model User {
   id            String    @id @default(cuid())
+  username      String    @unique  // New field added
   name          String?   @unique
   email         String?   @unique
   emailVerified DateTime?
   image         String?
   password      String
   
-
   tokensEarned    Int               @default(0)
   wasteCollected  Float             @default(0)
   rank            Int?
   accounts        Account[]
   sessions        Session[]
-  redemption     Redemption[]
+  redemption      Redemption[]
   purchases       Purchase[]
   posts           Post[]
   participatedCleanups SponsoredCleanup[]

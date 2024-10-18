@@ -1,14 +1,35 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/app/Providers';
 import ProfileDisplay from './ProfileDisplay';
 import { Home, Users, ShoppingBag, Folder, QrCode } from 'lucide-react';
+import { createClient } from '@/src/lib/supabase';
 
 export default function Navbar() {
   const { session, loading } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
+  const [username, setUsername] = useState('');
+  const supabase = createClient();
+
+  useEffect(() => {
+    if (session?.user) {
+      fetchUsername();
+    }
+  }, [session]);
+
+  const fetchUsername = async () => {
+    const { data, error } = await supabase
+      .from('users')
+      .select('username')
+      .eq('id', session?.user.id)
+      .single();
+
+    if (data) {
+      setUsername(data.username);
+    }
+  };
 
   const navItems = [
     { href: '/dashboard', icon: Home, label: 'Home' },
@@ -33,10 +54,13 @@ export default function Navbar() {
             {loading ? (
               <span>Loading...</span>
             ) : session ? (
-              <ProfileDisplay />
+              <div className="flex items-center">
+                <span className="mr-2">Hi, {username}!</span>
+                <ProfileDisplay />
+              </div>
             ) : (
               <>
-                <Link href="/login">Login</Link>
+                <Link href="/login" className="mr-2">Login</Link>
                 <Link href="/signup">Sign Up</Link>
               </>
             )}

@@ -11,6 +11,7 @@ import Link from 'next/link';
 export default function SignUp() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [username, setUsername] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
@@ -49,7 +50,7 @@ export default function SignUp() {
         // Add user to the 'users' table
         const { error: insertError } = await supabase
           .from('users')
-          .insert({ id: data.user.id, email: data.user.email });
+          .insert({ id: data.user.id, email: data.user.email, username });
 
         if (insertError) throw insertError;
 
@@ -76,6 +77,16 @@ export default function SignUp() {
       <div className="w-full max-w-md p-8 space-y-3 rounded-xl bg-white shadow-lg">
         <h1 className="text-2xl font-bold text-center">Sign Up</h1>
         <form onSubmit={handleSignUp} className="space-y-6">
+          <div className="space-y-1">
+            <label htmlFor="username" className="text-sm font-medium text-gray-700">Username</label>
+            <Input
+              id="username"
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              required
+            />
+          </div>
           <div className="space-y-1">
             <label htmlFor="email" className="text-sm font-medium text-gray-700">Email</label>
             <Input
