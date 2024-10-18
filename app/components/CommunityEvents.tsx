@@ -34,7 +34,11 @@ const events: Event[] = [
   }
 ]
 
-export function CommunityEvents() {
+interface CommunityEventsProps {
+  events: Event[];
+}
+
+export function CommunityEvents({ events }: CommunityEventsProps) {
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
       {events.map((event) => (
