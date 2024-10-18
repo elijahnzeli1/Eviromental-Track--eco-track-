@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { createClient } from '@/src/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
+import { LoadingSpinner } from '@/components/LoadingSpinner';
 
 export default function SignUp() {
   const [email, setEmail] = useState('');
@@ -108,7 +109,7 @@ export default function SignUp() {
             />
           </div>
           <Button type="submit" className="w-full text-xl bg-green-600 text-white hover:bg-green-700" disabled={isLoading}>
-            {isLoading ? 'Signing Up...' : 'Sign Up'}
+            {isLoading ? <LoadingSpinner /> : 'Sign Up'}
           </Button>
         </form>
         <div className="text-center mt-4">

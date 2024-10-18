@@ -5,11 +5,13 @@ import { Html5QrcodeScanner } from 'html5-qrcode';
 import { createClient } from '@/src/lib/supabase';
 import { useAuth } from '@/app/Providers';
 import { toast } from '@/components/ui/use-toast';
+import { LoadingSpinner } from '@/components/LoadingSpinner';
 
 export default function ScanPage() {
   const [scanResult, setScanResult] = useState<string | null>(null);
   const { session } = useAuth();
   const supabase = createClient();
+  const [isInitializing, setIsInitializing] = useState(true);
 
   useEffect(() => {
     const scanner = new Html5QrcodeScanner(
@@ -41,6 +43,18 @@ export default function ScanPage() {
       scanner.clear();
     };
   }, []);
+
+  useEffect(() => {
+    setIsInitializing(false);
+  }, []);
+
+  if (isInitializing) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <LoadingSpinner />
+      </div>
+    );
+  }
 
   const processQRCode = async (result: string) => {
     try {

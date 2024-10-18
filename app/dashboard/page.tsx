@@ -11,6 +11,12 @@ import { createClient } from '@/src/lib/supabase'
 import { useAuth } from '@/app/Providers'
 import { toast } from '@/components/ui/use-toast'
 import { LineChart } from '@mui/x-charts/LineChart'
+import { LoadingSpinner } from '@/components/LoadingSpinner'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { v4 as uuidv4 } from 'uuid'
 
 type SponsoredCleanup = {
   id: string
@@ -37,16 +43,20 @@ export default function DashboardPage() {
     tokensEarned: 0,
     wasteCollected: 0,
     rank: 0,
-    activityHistory: []
+    activityHistory: Array.from({ length: 30 }, (_, i) => ({
+      date: new Date(Date.now() - (29 - i) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      wasteCollected: 0
+    }))
   })
   const [sponsoredCleanups, setSponsoredCleanups] = useState<SponsoredCleanup[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isStartingCollection, setIsStartingCollection] = useState(false)
+  const [activeCollection, setActiveCollection] = useState(null)
   const { session } = useAuth()
   const supabase = createClient()
 
   useEffect(() => {
-    const fetchUserStats = async () => {
+    const fetchUserStats: () => Promise<void> = async () => {
       if (!session?.user?.id) return
 
       try {
@@ -114,6 +124,22 @@ export default function DashboardPage() {
       )
       .subscribe()
 
+    const fetchActiveCollection = async () => {
+      if (!session?.user?.id) return
+      const { data, error } = await supabase
+        .from('projects')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .eq('status', 'in_progress')
+        .single()
+
+      if (data) {
+        setActiveCollection(data)
+      }
+    }
+
+    fetchActiveCollection()
+
     return () => {
       userStatsSubscription.unsubscribe()
     }
@@ -125,42 +151,52 @@ export default function DashboardPage() {
         title: "Error",
         description: "You must be logged in to start a new collection.",
         variant: "destructive",
-      })
-      return
+      });
+      return;
     }
 
-    setIsStartingCollection(true)
+    setIsStartingCollection(true);
     try {
+      const newProjectId = uuidv4();
       const { data, error } = await supabase
-        .from('collections')
+        .from('projects')
         .insert({
+          id: newProjectId,
           user_id: session.user.id,
           start_time: new Date().toISOString(),
-          status: 'in_progress'
+          status: 'in_progress',
+          title: `Collection ${new Date().toLocaleDateString()}`,
+          description: 'New waste collection project',
         })
         .select()
-        .single()
+        .single();
 
-      if (error) throw error
+      if (error) throw error;
 
+      setActiveCollection(data)
       toast({
         title: "Success",
-        description: "New collection started successfully!",
-      })
+        description: "New collection project started successfully!",
+      });
+
     } catch (error) {
-      console.error('Error starting new collection:', error)
+      console.error('Error starting new collection:', error);
       toast({
         title: "Error",
         description: "Failed to start new collection. Please try again.",
         variant: "destructive",
-      })
+      });
     } finally {
-      setIsStartingCollection(false)
+      setIsStartingCollection(false);
     }
-  }
+  };
 
   if (isLoading) {
-    return <div>Loading...</div>
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <LoadingSpinner />
+      </div>
+    );
   }
 
   return (
@@ -209,7 +245,10 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <LineChart
-              xAxis={[{ data: userStats.activityHistory.map(item => item.date) }]}
+              xAxis={[{ 
+                data: userStats.activityHistory.map(item => item.date),
+                scaleType: 'band',
+              }]}
               series={[
                 {
                   data: userStats.activityHistory.map(item => item.wasteCollected),
@@ -218,6 +257,7 @@ export default function DashboardPage() {
                 },
               ]}
               height={300}
+              margin={{ top: 20, right: 20, bottom: 40, left: 40 }}
             />
           </CardContent>
         </Card>
@@ -234,9 +274,9 @@ export default function DashboardPage() {
           <Button 
             className="bg-green-600 text-white hover:bg-green-700"
             onClick={startNewCollection}
-            disabled={isStartingCollection}
+            disabled={isStartingCollection || activeCollection !== null}
           >
-            {isStartingCollection ? 'Starting...' : 'Start New Collection'}
+            {isStartingCollection ? 'Starting...' : activeCollection ? 'Collection in Progress' : 'Start New Collection'}
           </Button>
         </div>
         <div>
