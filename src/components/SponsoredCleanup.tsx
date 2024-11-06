@@ -8,6 +8,7 @@ interface SponsoredCleanupProps {
   location: string
   reward: number
   onJoin: () => void
+  buttonStyle?: string 
 }
 
 export default function SponsoredCleanup({ sponsor, date, location, reward, onJoin }: SponsoredCleanupProps) {
