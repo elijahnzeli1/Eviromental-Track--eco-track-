@@ -1,24 +1,25 @@
 'use client';
 
 import React from 'react';
-import { useAuth } from '@/app/Providers';
+import { useSession } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
-import { createClient } from '@/src/lib/supabase';
-import { toast } from '@/components/ui/use-toast';
+import { useToast } from '@/components/ui/use-toast';
 
 export default function PremiumPage() {
-  const { session } = useAuth();
-  const supabase = createClient();
+  const { data: session } = useSession();
+  const { toast } = useToast();
 
   const upgradeToPremium = async () => {
     try {
-      const { data, error } = await supabase
-        .from('users')
-        .update({ is_premium: true })
-        .eq('id', session?.user?.id)
-        .single();
+      const response = await fetch('/api/users/premium', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
 
-      if (error) throw error;
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message);
 
       toast({
         title: "Upgrade Successful",
@@ -45,7 +46,11 @@ export default function PremiumPage() {
           <li>Advanced analytics and insights</li>
           <li>Ad-free experience</li>
         </ul>
-        <Button onClick={upgradeToPremium} className="bg-green-600 text-white hover:bg-green-700">
+        <Button 
+          onClick={upgradeToPremium} 
+          className="bg-green-600 text-white hover:bg-green-700"
+          disabled={!session}
+        >
           Upgrade Now
         </Button>
       </div>

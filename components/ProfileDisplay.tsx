@@ -27,7 +27,7 @@ const ProfileDisplay = () => {
           {initials}
         </div>
       )}
-      <span className="ml-2">{user.email}</span>
+      {/* <span className="ml-2">{user.name}</span> */}
     </div>
   );
 };

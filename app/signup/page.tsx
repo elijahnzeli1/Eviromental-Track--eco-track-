@@ -1,72 +1,55 @@
 'use client';
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { createClient } from '@/src/lib/supabase';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/components/ui/use-toast';
 import Link from 'next/link';
-import { LoadingSpinner } from '@/components/LoadingSpinner';
 
-export default function SignUp() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [username, setUsername] = useState('');
+export default function SignUpPage() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
-  const supabase = createClient();
 
-  const handleSignUp = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      // Check if user already exists
-      const { data: existingUser } = await supabase
-        .from('users')
-        .select('id')
-        .eq('email', email)
-        .single();
+      const formData = new FormData(e.currentTarget);
+      const data = {
+        name: formData.get('name'),
+        email: formData.get('email'),
+        password: formData.get('password'),
+      };
 
-      if (existingUser) {
-        toast({
-          title: "Account Already Exists",
-          description: "This email is already registered. Please log in instead.",
-          variant: "destructive",
-        });
-        setIsLoading(false);
-        return;
-      }
+      console.log('Sending registration data:', { ...data, password: '***' });
 
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
       });
 
-      if (error) throw error;
+      const result = await response.json();
 
-      if (data.user) {
-        // Add user to the 'users' table
-        const { error: insertError } = await supabase
-          .from('users')
-          .insert({ id: data.user.id, email: data.user.email, username });
-
-        if (insertError) throw insertError;
-
-        toast({
-          title: "Sign Up Successful",
-          description: "Please check your email to confirm your account.",
-        });
-        router.push('/dashboard');
+      if (!response.ok) {
+        throw new Error(result.error || 'Registration failed');
       }
-    } catch (error) {
-      console.error('Error signing up:', error);
+
       toast({
-        title: "Sign Up Failed",
-        description: error instanceof Error ? error.message : "An unknown error occurred",
-        variant: "destructive",
+        title: 'Success',
+        description: 'Account created successfully!',
+      });
+
+      router.push('/login');
+    } catch (error) {
+      console.error('Registration error details:', error);
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Registration failed',
+        variant: 'destructive',
       });
     } finally {
       setIsLoading(false);
@@ -74,49 +57,73 @@ export default function SignUp() {
   };
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gray-100">
-      <div className="w-full max-w-md p-8 space-y-3 rounded-xl bg-white shadow-lg">
-        <h1 className="text-2xl font-bold text-center">Sign Up</h1>
-        <form onSubmit={handleSignUp} className="space-y-6">
-          <div className="space-y-1">
-            <label htmlFor="username" className="text-sm font-medium text-gray-700">Username</label>
-            <Input
-              id="username"
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              required
-            />
+    <div className="min-h-screen bg-gradient-to-b from-[#FFFAF0] to-[#E6F7FF] flex items-center justify-center">
+      <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-lg">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <h1 className="text-3xl font-bold text-center text-green-600 mb-8">Create Account</h1>
+          
+          <div className="space-y-4">
+            <div>
+              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                Name
+              </label>
+              <input
+                type="text"
+                id="name"
+                name="name"
+                required
+                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                placeholder="Enter your name"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                Email
+              </label>
+              <input
+                type="email"
+                id="email"
+                name="email"
+                required
+                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                placeholder="Enter your email"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                Password
+              </label>
+              <input
+                type="password"
+                id="password"
+                name="password"
+                required
+                minLength={6}
+                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                placeholder="Enter your password"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full py-3 px-4 bg-green-600 text-white font-medium rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors disabled:opacity-50"
+            >
+              {isLoading ? 'Creating account...' : 'Sign Up'}
+            </button>
           </div>
-          <div className="space-y-1">
-            <label htmlFor="email" className="text-sm font-medium text-gray-700">Email</label>
-            <Input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
+
+          <div className="mt-4 text-center">
+            <p className="text-sm text-gray-600">
+              Already have an account?{' '}
+              <Link href="/login" className="text-green-600 hover:text-green-700 font-medium">
+                Login
+              </Link>
+            </p>
           </div>
-          <div className="space-y-1">
-            <label htmlFor="password" className="text-sm font-medium text-gray-700">Password</label>
-            <Input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-          </div>
-          <Button type="submit" className="w-full text-xl bg-green-600 text-white hover:bg-green-700" disabled={isLoading}>
-            {isLoading ? <LoadingSpinner /> : 'Sign Up'}
-          </Button>
         </form>
-        <div className="text-center mt-4">
-          <Link href="/login" className="text-blue-600 hover:underline">
-            Already have an account? Log in
-          </Link>
-        </div>
       </div>
     </div>
   );

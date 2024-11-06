@@ -10,8 +10,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { createClient } from '@/src/lib/supabase'
-import { useAuth } from '@/app/Providers'
+import { useSession } from 'next-auth/react'
+import { useToast } from '@/components/ui/use-toast'
 
 interface CustomEvent {
   title: string;
@@ -28,48 +28,72 @@ export default function CommunityPage() {
     date: '',
     type: 'cleanup'
   })
-  const { session } = useAuth()
-  const supabase = createClient()
+  const { data: session } = useSession()
+  const { toast } = useToast()
 
   useEffect(() => {
     fetchEvents()
   }, [])
 
   async function fetchEvents() {
-    const { data, error } = await supabase
-      .from('events')
-      .select('*')
-    
-    if (error) {
+    try {
+      const response = await fetch('/api/events')
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error)
+      setEvents(data)
+    } catch (error) {
       console.error('Error fetching events:', error)
-    } else {
-      setEvents(data as any)
+      toast({
+        title: 'Error',
+        description: 'Failed to fetch events',
+        variant: 'destructive',
+      })
     }
   }
 
   async function createEvent() {
     if (!session) {
-      alert('Please log in to create an event')
+      toast({
+        title: 'Error',
+        description: 'Please log in to create an event',
+        variant: 'destructive',
+      })
       return
     }
 
-    const { data, error } = await supabase
-      .from('events')
-      .insert({
-        ...newEvent,
-        creator_id: session.user.id
+    try {
+      const response = await fetch('/api/events', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...newEvent,
+          creatorId: session.user.id
+        }),
       })
 
-    if (error) {
-      console.error('Error creating event:', error)
-    } else {
-      alert('Event created successfully!')
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error)
+
+      toast({
+        title: 'Success',
+        description: 'Event created successfully!',
+      })
+      
       fetchEvents()
       setNewEvent({
         title: '',
         description: '',
         date: '',
         type: 'cleanup'
+      })
+    } catch (error) {
+      console.error('Error creating event:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to create event',
+        variant: 'destructive',
       })
     }
   }

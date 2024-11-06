@@ -1,38 +1,65 @@
-import { createClient } from '@/src/lib/supabase'
-import { PostgrestError } from '@supabase/supabase-js'
+import connectDB from '@/src/lib/mongodb'
+import User from '@/src/models/user'
+import { ObjectId } from 'mongodb'
 
 export async function awardTokens(userId: string, amount: number) {
-  const supabase = createClient()
-  const { data, error } = await supabase
-    .rpc('award_tokens', { user_id: userId, amount: amount })
+  try {
+    await connectDB()
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { $inc: { tokensEarned: amount } },
+      { new: true }
+    )
 
-  if (error) handleSupabaseError(error)
-  return data
+    if (!user) {
+      throw new Error('User not found')
+    }
+
+    return user.tokensEarned
+  } catch (error) {
+    handleDatabaseError(error)
+  }
 }
 
 export async function spendTokens(userId: string, amount: number) {
-  const supabase = createClient()
-  const { data, error } = await supabase
-    .rpc('spend_tokens', { user_id: userId, amount: amount })
+  try {
+    await connectDB()
+    const user = await User.findById(userId)
 
-  if (error) handleSupabaseError(error)
-  return data
+    if (!user) {
+      throw new Error('User not found')
+    }
+
+    if (user.tokensEarned < amount) {
+      throw new Error('Insufficient tokens')
+    }
+
+    user.tokensEarned -= amount
+    await user.save()
+
+    return user.tokensEarned
+  } catch (error) {
+    handleDatabaseError(error)
+  }
 }
 
 export async function getTokenBalance(userId: string) {
-  const supabase = createClient()
-  const { data, error } = await supabase
-    .from('users')
-    .select('tokens_earned')
-    .eq('id', userId)
-    .single()
+  try {
+    await connectDB()
+    const user = await User.findById(userId)
 
-  if (error) handleSupabaseError(error)
-  return data.tokens_earned
+    if (!user) {
+      throw new Error('User not found')
+    }
+
+    return user.tokensEarned
+  } catch (error) {
+    handleDatabaseError(error)
+  }
 }
 
-// Helper function to handle Supabase errors
-function handleSupabaseError(error: PostgrestError): never {
-  console.error('Supabase error:', error)
-  throw new Error(`Database operation failed: ${error.message}`)
+// Helper function to handle database errors
+function handleDatabaseError(error: unknown): never {
+  console.error('Database error:', error)
+  throw new Error(`Database operation failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
 }

@@ -1,35 +1,14 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import Link from 'next/link';
-import { useAuth } from '@/app/Providers';
+import { useSession } from 'next-auth/react';
 import ProfileDisplay from './ProfileDisplay';
 import { Home, Users, ShoppingBag, Folder, QrCode } from 'lucide-react';
-import { createClient } from '@/src/lib/supabase';
 
 export default function Navbar() {
-  const { session, loading } = useAuth();
-  const [isOpen, setIsOpen] = useState(false);
-  const [username, setUsername] = useState('');
-  const supabase = createClient();
-
-  useEffect(() => {
-    if (session?.user) {
-      fetchUsername();
-    }
-  }, [session]);
-
-  const fetchUsername = async () => {
-    const { data, error } = await supabase
-      .from('users')
-      .select('username')
-      .eq('id', session?.user.id)
-      .single();
-
-    if (data) {
-      setUsername(data.username);
-    }
-  };
+  const { data: session, status } = useSession();
+  const loading = status === 'loading';
 
   const navItems = [
     { href: '/dashboard', icon: Home, label: 'Home' },
@@ -55,7 +34,7 @@ export default function Navbar() {
               <span>Loading...</span>
             ) : session ? (
               <div className="flex items-center">
-                <span className="mr-2">Hi, {username}!</span>
+                {/* <span className="mr-2">Hi, {session.user.name}!</span> */}
                 <ProfileDisplay />
               </div>
             ) : (

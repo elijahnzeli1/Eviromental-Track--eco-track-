@@ -1,34 +1,31 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/src/lib/supabase'
+import { getServerSession } from 'next-auth/next'
+import { authOptions } from '@/app/api/auth/[...nextauth]/route'
+import connectDB from '@/src/lib/mongodb'
+import User from '@/src/models/user'
 
-export async function GET(req: Request) {
-  const supabase = createClient()
-
-  const { data } = await supabase.auth.getSession()
-  const session = data.session
-
-  if (!session) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
+export async function GET() {
   try {
-    const { data: user, error } = await supabase
-      .from('users')
-      .select('tokens_earned, waste_collected, rank')
-      .eq('id', session.user.id)
-      .single()
+    const session = await getServerSession(authOptions)
 
-    if (error || !user) {
+    if (!session || !session.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    await connectDB()
+    const user = await User.findById(session.user.id)
+
+    if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
     return NextResponse.json({
-      tokensEarned: user.tokens_earned,
-      wasteCollected: user.waste_collected,
+      tokensEarned: user.tokensEarned,
+      wasteCollected: user.wasteCollected,
       rank: user.rank
     })
   } catch (error) {
-    console.error('Failed to fetch user stats:', error)
-    return NextResponse.json({ error: 'Failed to fetch user stats' }, { status: 500 })
+    console.error('Error fetching user stats:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

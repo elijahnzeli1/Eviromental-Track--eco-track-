@@ -1,48 +1,48 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState } from 'react'
-import { createClient } from '@/src/lib/supabase'
-import { Session, SupabaseClient } from '@supabase/supabase-js'
+import { createContext, useContext } from 'react'
+import { SessionProvider, useSession } from 'next-auth/react'
 import { ThemeProvider } from './ThemeProvider'
 
-const AuthContext = createContext<{ 
-  session: Session | null; 
+// Create an auth context for our application
+const AuthContext = createContext<{
+  session: any;
   loading: boolean;
-  supabase: SupabaseClient;
 }>({
   session: null,
   loading: true,
-  supabase: {} as SupabaseClient, // This is a placeholder and will be overwritten
 })
 
-export function Providers({ children }: { children: React.ReactNode }) {
-  const [session, setSession] = useState<Session | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [supabase] = useState(() => createClient())
-
-  useEffect(() => {
-    const fetchSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      setSession(session)
-      setLoading(false)
-    }
-
-    fetchSession()
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session)
-      setLoading(false)
-    })
-
-    return () => subscription.unsubscribe()
-  }, [supabase])
+// Create a wrapper component for NextAuth's SessionProvider
+function AuthProvider({ children }: { children: React.ReactNode }) {
+  const { data: session, status } = useSession()
+  const loading = status === 'loading'
 
   return (
-    <AuthContext.Provider value={{ session, loading, supabase }}>
-      <ThemeProvider>
-        {children}
-      </ThemeProvider>
+    <AuthContext.Provider value={{ session, loading }}>
+      {children}
     </AuthContext.Provider>
   )
 }
-export const useAuth = () => useContext(AuthContext)
+
+// Main Providers component that wraps our application
+export function Providers({ children }: { children: React.ReactNode }) {
+  return (
+    <SessionProvider>
+      <AuthProvider>
+        <ThemeProvider>
+          {children}
+        </ThemeProvider>
+      </AuthProvider>
+    </SessionProvider>
+  )
+}
+
+// Custom hook to access auth context
+export const useAuth = () => {
+  const context = useContext(AuthContext)
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider')
+  }
+  return context
+}

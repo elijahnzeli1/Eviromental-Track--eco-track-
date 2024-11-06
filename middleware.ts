@@ -1,10 +1,19 @@
-import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs'
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
+import { withAuth } from 'next-auth/middleware'
 
-export async function middleware(req: NextRequest) {
-  const res = NextResponse.next()
-  const supabase = createMiddlewareClient({ req, res })
-  await supabase.auth.getSession()
-  return res
+export default withAuth({
+  pages: {
+    signIn: '/login',
+  },
+})
+
+export const config = {
+  matcher: [
+    '/dashboard/:path*',
+    '/profile/:path*',
+    '/settings/:path*',
+    '/api/protected/:path*',
+    '/api/auth/:path*',
+    '/api/protected/:path*',
+    // Add other protected routes here
+  ]
 }

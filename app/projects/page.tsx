@@ -5,83 +5,117 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Leaf, Users, Calendar, Plus } from "lucide-react"
-import { createClient } from '@/src/lib/supabase'
-import { useAuth } from '@/app/Providers'
+import { useSession } from 'next-auth/react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useToast } from '@/components/ui/use-toast'
 
 interface Project {
-  id: number
+  _id: string
   title: string
   description: string
   date: string
   participants: number
   category: string
-  creator_id: string
+  creatorId: string
 }
 
 export default function ProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([])
   const [newProject, setNewProject] = useState<Partial<Project>>({})
-  const { session } = useAuth()
-  const supabase = createClient()
+  const { data: session } = useSession()
+  const { toast } = useToast()
 
   useEffect(() => {
     fetchProjects()
   }, [])
 
   async function fetchProjects() {
-    const { data, error } = await supabase
-      .from('projects')
-      .select('*')
-    
-    if (error) {
-      console.error('Error fetching projects:', error)
-    } else {
-      setProjects(data || [])
+    try {
+      const response = await fetch('/api/projects')
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.message)
+      setProjects(data)
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to fetch projects",
+        variant: "destructive",
+      })
     }
   }
 
-  async function joinProject(projectId: number) {
+  async function joinProject(projectId: string) {
     if (!session) {
-      alert('Please log in to join a project')
+      toast({
+        title: "Error",
+        description: "Please log in to join a project",
+        variant: "destructive",
+      })
       return
     }
 
-    const { data, error } = await supabase
-      .from('project_participants')
-      .insert({ project_id: projectId, user_id: session.user.id })
+    try {
+      const response = await fetch(`/api/projects/${projectId}/join`, {
+        method: 'POST',
+      })
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.message)
 
-    if (error) {
-      console.error('Error joining project:', error)
-    } else {
-      alert('Successfully joined the project!')
+      toast({
+        title: "Success",
+        description: "Successfully joined the project!",
+      })
       fetchProjects()
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to join project",
+        variant: "destructive",
+      })
     }
   }
 
   async function createProject() {
     if (!session) {
-      alert('Please log in to create a project')
+      toast({
+        title: "Error",
+        description: "Please log in to create a project",
+        variant: "destructive",
+      })
       return
     }
 
-    const { data, error } = await supabase
-      .from('projects')
-      .insert({
-        ...newProject,
-        creator_id: session.user.id,
-        participants: 0
+    try {
+      const response = await fetch('/api/projects', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...newProject,
+          creatorId: session.user.id,
+          participants: 0
+        }),
       })
 
-    if (error) {
-      console.error('Error creating project:', error)
-    } else {
-      alert('Project created successfully!')
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.message)
+
+      toast({
+        title: "Success",
+        description: "Project created successfully!",
+      })
       fetchProjects()
       setNewProject({})
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to create project",
+        variant: "destructive",
+      })
     }
   }
 
@@ -134,7 +168,7 @@ export default function ProjectsPage() {
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {projects.map((project) => (
-          <Card key={project.id} className="flex flex-col">
+          <Card key={project._id} className="flex flex-col">
             <CardHeader>
               <CardTitle className="text-xl font-semibold">{project.title}</CardTitle>
               <CardDescription className="flex items-center mt-2">
@@ -155,7 +189,7 @@ export default function ProjectsPage() {
               </div>
               <Button 
                 className="bg-green-600 hover:bg-green-700"
-                onClick={() => joinProject(project.id)}
+                onClick={() => joinProject(project._id)}
               >
                 Join Project
               </Button>

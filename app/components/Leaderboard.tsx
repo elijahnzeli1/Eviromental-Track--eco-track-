@@ -2,50 +2,43 @@
 
 import React, { useEffect, useState } from 'react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
-import { createClient } from '@supabase/supabase-js'
-
-// Initialize the Supabase client
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+import { useToast } from '@/components/ui/use-toast'
 
 interface User {
   id: string
-  name: string
-  score: number
+  username: string
+  tokensEarned: number
 }
 
 export function Leaderboard() {
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const { toast } = useToast()
 
   useEffect(() => {
     async function fetchLeaderboard() {
       try {
-        const { data, error } = await supabase
-          .from('leaderboard')
-          .select('id, name, score')
-          .order('score', { ascending: false })
-          .limit(5)
-
-        if (error) throw error
-
+        const response = await fetch('/api/leaderboard')
+        const data = await response.json()
+        
+        if (!response.ok) throw new Error(data.error)
         setUsers(data)
-      } catch (e) {
-        setError('Failed to fetch leaderboard data')
-        console.error(e)
+      } catch (error) {
+        console.error('Error fetching leaderboard:', error)
+        toast({
+          title: 'Error',
+          description: 'Failed to fetch leaderboard data',
+          variant: 'destructive',
+        })
       } finally {
         setLoading(false)
       }
     }
 
     fetchLeaderboard()
-  }, [])
+  }, [toast])
 
   if (loading) return <div>Loading...</div>
-  if (error) return <div>Error: {error}</div>
 
   return (
     <Card>
@@ -56,8 +49,8 @@ export function Leaderboard() {
         <ul className="space-y-2">
           {users.map((user, index) => (
             <li key={user.id} className="flex justify-between items-center">
-              <span>{index + 1}. {user.name}</span>
-              <span>{user.score} points</span>
+              <span>{index + 1}. {user.username}</span>
+              <span>{user.tokensEarned} tokens</span>
             </li>
           ))}
         </ul>
