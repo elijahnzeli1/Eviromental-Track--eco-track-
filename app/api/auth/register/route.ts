@@ -1,24 +1,14 @@
 import { NextResponse } from 'next/server';
-import bcrypt from 'bcryptjs';
 import connectDB from '@/src/lib/mongodb';
-import User, { cleanupIndexes } from '@/src/models/user';
-import mongoose from 'mongoose';
-
-interface MongoError extends Error {
-  code?: number;
-  keyPattern?: { [key: string]: number };
-  keyValue?: { [key: string]: any };
-}
+import { User } from '@/src/models';
 
 export async function POST(request: Request) {
   try {
-    console.log('Starting registration process');
+    await connectDB();
 
-    const body = await request.json();
-    console.log('Request body:', { ...body, password: '***' });
+    const { name, email, password } = await request.json();
 
-    const { name, email, password } = body;
-
+    // Validate input
     if (!name || !email || !password) {
       return NextResponse.json(
         { error: 'Missing required fields' },
@@ -26,14 +16,8 @@ export async function POST(request: Request) {
       );
     }
 
-    await connectDB();
-    
-    // Clean up old indexes if they exist
-    await cleanupIndexes();
-
     // Check if user exists
     const existingUser = await User.findOne({ email: email.toLowerCase() });
-    
     if (existingUser) {
       return NextResponse.json(
         { error: 'Email already registered' },
@@ -41,54 +25,28 @@ export async function POST(request: Request) {
       );
     }
 
-    const hashedPassword = await bcrypt.hash(password, 12);
-
+    // Create new user (password will be hashed by the pre-save middleware)
     const user = await User.create({
       name,
       email: email.toLowerCase(),
-      password: hashedPassword,
-      tokensEarned: 0,
-      wasteCollected: 0,
-      rank: 0
+      password
     });
 
-    console.log('User created successfully');
+    // Remove password from response
+    const userWithoutPassword = {
+      id: user._id,
+      name: user.name,
+      email: user.email
+    };
 
     return NextResponse.json(
-      {
-        success: true,
-        user: {
-          id: user._id.toString(),
-          name: user.name,
-          email: user.email
-        }
-      },
+      { user: userWithoutPassword, message: 'Registration successful' },
       { status: 201 }
     );
-
-  } catch (error: unknown) {
+  } catch (error) {
     console.error('Registration error:', error);
-
-    if (error instanceof mongoose.Error.ValidationError) {
-      const validationErrors = Object.values(error.errors).map(err => err.message);
-      return NextResponse.json(
-        { error: validationErrors.join(', ') },
-        { status: 400 }
-      );
-    }
-
-    // Handle MongoDB duplicate key error
-    const mongoError = error as MongoError;
-    if (mongoError.code === 11000) {
-      const field = Object.keys(mongoError.keyPattern || {})[0];
-      return NextResponse.json(
-        { error: `${field} already exists` },
-        { status: 409 }
-      );
-    }
-
     return NextResponse.json(
-      { error: 'Registration failed. Please try again.' },
+      { error: 'Registration failed' },
       { status: 500 }
     );
   }

@@ -1,92 +1,102 @@
-import NextAuth, { DefaultSession, NextAuthOptions } from 'next-auth';
-import CredentialsProvider from 'next-auth/providers/credentials';
-import bcrypt from 'bcryptjs';
-import connectDB from '@/src/lib/mongodb';
-import User from '@/src/models';
-import { JWT } from 'next-auth/jwt';
+import NextAuth, { DefaultSession, NextAuthOptions, Session } from 'next-auth'
+import CredentialsProvider from 'next-auth/providers/credentials'
+import connectDB from '@/src/lib/mongodb'
+import { User } from '@/src/models'
+import { JWT } from 'next-auth/jwt'
+
+// Define custom user interface
+interface UserDocument {
+  _id: string
+  name: string
+  email: string
+  password: string
+}
 
 // Extend the built-in session types
 declare module 'next-auth' {
-  interface Session extends DefaultSession {
+  interface Session {
     user: {
-      id: string;
-      email: string;
-      name: string;
+      id: string
     } & DefaultSession['user']
   }
 
   interface User {
-    id: string;
-    email: string;
-    name: string;
-  }
-}
-
-// Extend JWT type
-declare module 'next-auth/jwt' {
-  interface JWT {
-    id: string;
+    id: string
+    name: string
+    email: string
   }
 }
 
 export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
-      name: 'Credentials',
+      name: 'credentials',
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" }
       },
-      async authorize(credentials): Promise<any> {
+      async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
-          throw new Error('Please provide email and password');
+          throw new Error('Please enter an email and password')
         }
 
-        await connectDB();
-        const user = await User.findOne({ email: credentials.email });
+        try {
+          await connectDB()
 
-        if (!user) {
-          throw new Error('No user found with this email');
+          const user = await User.findOne({ 
+            email: credentials.email.toLowerCase() 
+          })
+          
+          if (!user) {
+            throw new Error('No user found with this email')
+          }
+
+          const isValid = await user.comparePassword(credentials.password)
+          
+          if (!isValid) {
+            throw new Error('Incorrect password')
+          }
+
+          return {
+            id: user._id.toString(),
+            name: user.name,
+            email: user.email,
+          }
+        } catch (error) {
+          console.error('Auth error:', error)
+          throw new Error('Authentication failed')
         }
-
-        const isPasswordValid = await bcrypt.compare(credentials.password, user.password);
-        if (!isPasswordValid) {
-          throw new Error('Invalid password');
-        }
-
-        return {
-          id: user._id.toString(),
-          email: user.email,
-          name: user.name
-        };
       }
     })
   ],
   callbacks: {
-    async jwt({ token, user }: { token: JWT; user: any }) {
+    async jwt({ token, user }) {
       if (user) {
-        token.id = user.id;
+        token.id = user.id
       }
-      return token;
+      return token
     },
-    async session({ session, token }: { 
-      session: { user: { id: string; email: string; name: string } } & DefaultSession; 
-      token: JWT;
-    }) {
-      if (session.user) {
-        session.user.id = token.id;
+    async session({ session, token }): Promise<Session> {
+      return {
+        ...session,
+        user: {
+          ...session.user,
+          id: token.id as string,
+        },
+        expires: session.expires
       }
-      return session;
     }
   },
   pages: {
     signIn: '/login',
+    error: '/login',
   },
   session: {
     strategy: 'jwt',
+    maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   secret: process.env.NEXTAUTH_SECRET,
-};
+}
 
-const handler = NextAuth(authOptions);
-export { handler as GET, handler as POST };
+const handler = NextAuth(authOptions)
+export { handler as GET, handler as POST }
